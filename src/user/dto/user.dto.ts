@@ -11,7 +11,7 @@ export class registerBodyDto {
   readonly nickname:string;
   @IsString()
   readonly repassword:string;
-  @IsNumber()
-  readonly mobile:number;
-  readonly role? :string | number
+  @IsString()
+  readonly mobile:string;
+  readonly role? :string
 }

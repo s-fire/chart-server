@@ -135,9 +135,9 @@
     readonly nickname:string;
     @IsString()
     readonly repassword:string;
-    @IsNumber()
-    readonly mobile:number;
-    readonly role? :string | number
+    @IsString()
+    readonly mobile:string;
+    readonly role? :string
   }
   ```
 
@@ -165,5 +165,71 @@
     providers: [AppService],
   })
   export class AppModule {}
+  ```
+  9. 配置Entity实体类 新建 src/user/entites/user.entity.ts
+  ```js
+  import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+
+  @Entity()
+  export class User {
+    // 主键
+    @PrimaryGeneratedColumn()
+    id: number;
+    @Column()
+    username: string;
+    @Column()
+    password: string;
+    @Column()
+    nickname: string;
+    @Column()
+    repassword: string;
+    @Column()
+    mobile: string;
+    @Column({default:0})
+    role: string
+  }
+  ```
+  10. 将实体类引入到对应的Module中
+  ```js
+  // user.mudule.ts
+  import { Module } from '@nestjs/common';
+  import { TypeOrmModule } from '@nestjs/typeorm';
+  import { User } from './entites/user.entites';
+  import { UserController } from './user.controller';
+  import { UserService } from './user.service';
+
+  @Module({
+    imports:[TypeOrmModule.forFeature([User])],
+    controllers: [UserController],
+    providers: [UserService]
+  })
+  export class UserModule {}
+  ```
+  11. 将实体注入到对应的server中
+  ```js
+  import { Injectable } from '@nestjs/common';
+  import { InjectRepository } from '@nestjs/typeorm';
+  import { Repository } from 'typeorm';
+
+  import { registerBodyDto } from './dto/user.dto';
+  import { User } from './entites/user.entites';
+
+  @Injectable()
+  export class UserService {
+    constructor(
+      @InjectRepository(User)
+      private readonly userRepository:Repository<User>
+    ){}
+    async register(registerBodyDto:registerBodyDto) {
+      // const registerSql = `
+      // INSERT INTO user
+      //    (username,nickname,password,repassword,mobile,role)
+      // VALUES
+      //     ('admin1','admin',123456,123456,18,1)`
+      // const data = await this.userRepository.query(registerSql)
+      const data = await this.userRepository.save(registerBodyDto)
+      return data
+    }
+  }
   ```
 
