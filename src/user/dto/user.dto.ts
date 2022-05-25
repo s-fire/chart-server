@@ -15,3 +15,9 @@ export class registerBodyDto {
   readonly mobile:string;
   readonly role? :string
 }
+export class loginBodyDto{
+  @IsString()
+  readonly username:string;
+  @IsString()
+  readonly password:string
+}

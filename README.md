@@ -232,4 +232,109 @@
     }
   }
   ```
+# 配置本地Passport 策略
+1. npm install --save @nestjs/passport passport passport-local npm install --save-dev @types/passport-local
+2. nest g module auth nest g service auth
+3. auth/auth.service.ts
+   ```js
+    import { Injectable } from '@nestjs/common';
+    import { UserService } from 'src/user/user.service';
+
+    @Injectable()
+    export class AuthService {
+      constructor(private readonly userService:UserService){}
+      async valiadateUser(username:string,pass:string):Promise<any>{
+        const user = await this.userService.findOne(username)
+        if (user && user.password === pass) {
+          const {password,...result} = user
+          return result
+        }
+        return null
+      }
+    }
+
+   ```
+4. auth/local.strategy.ts
+   ```js
+    import { Injectable, UnauthorizedException } from "@nestjs/common";
+    import { PassportStrategy } from "@nestjs/passport";
+    import { Strategy } from "passport-local";
+    import { AuthService } from "./auth.service";
+
+    @Injectable()
+    export class LocalStrategy extends PassportStrategy(Strategy){ // strategy是系统自带的策略名  可以使用自定义的替换
+      constructor(private readonly authService:AuthService){
+        super()
+      }
+      async validate(username:string,password:string):Promise<any>{
+        const user = await this.authService.valiadateUser(username,password)
+        if (!user) {
+          throw new UnauthorizedException()
+        }
+        return user
+      }
+    }
+  ```
+5. auth/auth.module.ts
+   ```js
+   import { Module } from '@nestjs/common';
+  import { PassportModule } from '@nestjs/passport';
+  import { UserModule } from 'src/user/user.module';
+  import { AuthService } from './auth.service';
+  import { LocalStrategy } from './local.strategy';
+
+  @Module({
+    imports:[UserModule,PassportModule],
+    providers: [AuthService,LocalStrategy]
+  })
+  export class AuthModule {}
+  ```
+# 配置jwt
+  1. npm install @nestjs/jwt passport-jwt npm install @types/passport-jwt --save-dev
+  2. auth/auth.service.ts
+    ```js
+    import { Injectable } from '@nestjs/common';
+    import { JwtService } from '@nestjs/jwt';
+    import { loginBodyDto } from 'src/user/dto/user.dto';
+    import { UserService } from 'src/user/user.service';
+
+    @Injectable()
+    export class AuthService {
+      constructor(
+        private readonly userService:UserService,
+        private readonly jwtService:JwtService
+        ){}
+      async login(user:loginBodyDto){
+        const payload = {username:user.username,password:user.password}
+        return {
+          access_token:this.jwtService.sign(payload)
+        }
+      }
+    }
+  ```
+  3. auth.modeule.ts
+  ```js
+  import { Module } from '@nestjs/common';
+  import { JwtModule } from '@nestjs/jwt';
+  import { PassportModule } from '@nestjs/passport';
+  import { UserModule } from 'src/user/user.module';
+  import { AuthService } from './auth.service';
+  import { jwtConstants } from './contants';
+  import { LocalStrategy } from './local.strategy';
+
+  @Module({
+    imports:[
+      UserModule,
+      PassportModule,
+      JwtModule.register({
+        secret:jwtConstants.secret,
+        signOptions:{expiresIn:'8h'}
+      })
+    ],
+    providers: [AuthService,LocalStrategy]
+  })
+  export class AuthModule {}
+  ```
+  
+
 
